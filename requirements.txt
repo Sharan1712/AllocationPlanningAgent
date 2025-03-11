@@ -1,0 +1,4 @@
+pandas
+crewai
+streamlit
+pydantic

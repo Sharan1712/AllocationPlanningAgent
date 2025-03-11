@@ -98,7 +98,7 @@ for config_type, file_path in files.items():
 agents_config = configs['agents']
 tasks_config = configs['tasks']
 
-llm = llm = LLM(model = "openai/gpt-4o-mini")
+llm = llm = LLM(model = f"openai/{selected_model}")
 planner_crew = ProjectPlanner(agents_config, tasks_config, llm)    
 
 # Create two columns for the input section
