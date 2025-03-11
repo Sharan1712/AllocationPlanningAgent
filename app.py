@@ -1,7 +1,8 @@
 import streamlit as st
 import os
+import yaml
 from crewai import LLM
-# from agents import * 
+from agents import *
 
 # Streamlit Page Config
 st.set_page_config(
@@ -20,7 +21,7 @@ st.logo(
 col1, col2, col3 = st.columns([1, 9, 1])
 with col2:
     # Title and description
-    st.title("📅AI Project Planner, powered by :red[CrewAI]")
+    st.title("AI Project Planner, powered by :red[CrewAI]")
     st.markdown("Create an detailed project plan with resource allocation and a timeline for tasks and milestones using AI agents.")
     
 # Sidebar
@@ -53,14 +54,14 @@ with st.sidebar:
         if openai_api_key:
             os.environ["OPENAI_API_KEY"] = openai_api_key
             
-        serper_api_key = st.text_input(
-            "Serper API Key",
-            type = "password",
-            placeholder = "Enter your Serper API key",
-            help = "Enter your Serper API key for web search capabilities"
-            )
-        if serper_api_key:
-            os.environ["SERPER_API_KEY"] = serper_api_key
+        # serper_api_key = st.text_input(
+        #     "Serper API Key",
+        #     type = "password",
+        #     placeholder = "Enter your Serper API key",
+        #     help = "Enter your Serper API key for web search capabilities"
+        #     )
+        # if serper_api_key:
+        #     os.environ["SERPER_API_KEY"] = serper_api_key
     
     st.write("")
     
@@ -73,19 +74,38 @@ with st.sidebar:
                 
                 Choose your preferred model and enter the required API keys to get started.""")
         
-# if not os.environ.get("OPENAI_API_KEY"):
-#     st.warning("⚠️ Please enter your OpenAI API key in the sidebar to get started")
-#     st.stop()
+if not os.environ.get("OPENAI_API_KEY"):
+    st.warning("⚠️ Please enter your OpenAI API key in the sidebar to get started")
+    st.stop()
 
 # if not os.environ.get("SERPER_API_KEY"):
 #     st.warning("⚠️ Please enter your Serper API key in the sidebar to get started")
 #     st.stop()
-    
+
+# Define file paths for YAML configurations
+files = {
+    'agents': 'config/agents.yaml',
+    'tasks': 'config/tasks.yaml'
+}
+
+# Load configurations from YAML files
+configs = {}
+for config_type, file_path in files.items():
+    with open(file_path, 'r') as file:
+        configs[config_type] = yaml.safe_load(file)
+
+# Assign loaded configurations to specific variables
+agents_config = configs['agents']
+tasks_config = configs['tasks']
+
+llm = llm = LLM(model = "openai/gpt-4o-mini")
+planner_crew = ProjectPlanner(agents_config, tasks_config, llm)    
+
 # Create two columns for the input section
 input_col1, input_col2, input_col3 = st.columns([3, 3, 5])
 
 with input_col1:
-    event_topic = st.text_area(
+    project_topic = st.text_area(
         "Project Topic",
         height = 80,
         placeholder = "Enter the project topic (eg Website, Hiring, Building)"                
@@ -136,7 +156,29 @@ with input_col5:
     
 generate_button = st.button("🚀 Plan My Project", use_container_width = False, type = "primary")
 
+if generate_button:
+    with st.spinner("Generating content... This may take a moment."):
+        try:
+            project_details = {
+                'project_type': project_topic,
+                'project_objectives': objective,
+                'industry': industry,
+                'team_members': team_members,
+                'project_requirements': project_requirements
+                }
+            df_tasks, df_milestones = planner_crew.getPlanning(project_details)
 
+        except Exception as e:
+            st.error(f"An error occurred: {str(e)}")
+    
+    st.markdown("## Task Breakdown:")
+    st.dataframe(df_tasks)
+    
+    st.divider()
+    
+    st.markdown("## Milestone Details")
+    st.dataframe(df_milestones)    
+    
 
 
 
